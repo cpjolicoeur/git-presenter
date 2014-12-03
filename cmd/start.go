@@ -11,6 +11,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/cpjolicoeur/git-presenter/models"
+	"github.com/cpjolicoeur/git-presenter/presenter"
 )
 
 var CmdStart = cli.Command{
@@ -25,10 +26,13 @@ var CmdStart = cli.Command{
 }
 
 func runStart(ctx *cli.Context) {
+	var controller presenter.Controller
+	verbose := ctx.Bool("verbose")
+
 	configFile, exists := configFileExists()
 	if exists {
 		defer configFile.Close()
-		if ctx.Bool("verbose") {
+		if verbose {
 			fmt.Printf("Found %s file\n", PRESENTATION_FILE)
 		}
 
@@ -44,13 +48,15 @@ func runStart(ctx *cli.Context) {
 			return
 		}
 
-		if ctx.Bool("verbose") {
+		if verbose {
 			fmt.Println("Presenting repository from:", presentationConfig.Repo)
 		}
-		// presentFromConfig()
+		controller.Load(presentationConfig, verbose)
 	} else {
-		// present()
+		controller.Initialize(ctx.String("repo"), verbose)
 	}
+
+	controller.Start(verbose)
 	return
 }
 
