@@ -9,7 +9,6 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/cpjolicoeur/git-presenter/models"
-	"github.com/libgit2/git2go"
 )
 
 const PRESENTATION_FILE = ".git-presentation"
@@ -27,35 +26,27 @@ You can edit use this file to customize which commits will be included in the pr
 }
 
 func runInit(ctx *cli.Context) {
-	if ctx.Bool("verbose") {
+	verbose := ctx.Bool("verbose")
+	if verbose {
 		fmt.Printf("Initializing %s file\n", PRESENTATION_FILE)
 	}
-
 	repoPath := ctx.String("repo")
 
-	repo, err := git.OpenRepository(repoPath)
+	repository := &models.Repository{Path: repoPath}
+	err := repository.Open()
 	if err != nil {
 		fmt.Println("Problem opening repository:", err)
 		return
 	}
-	defer repo.Free()
+	defer repository.Cleanup()
 
-	revWalker, err := repo.Walk()
+	err = repository.Process(verbose)
 	if err != nil {
-		fmt.Println("Problem walking repository commit history:", err)
-		return
-	}
-	defer revWalker.Free()
-
-	err = revWalker.PushHead()
-	if err != nil {
-		fmt.Println("Problem pushing HEAD onto walker:", err)
+		fmt.Printf("Error processing repository: %s", err)
 		return
 	}
 
-	revWalker.Sorting(git.SortReverse)
-
-	err = createPresentationFile(*revWalker, repo.Path(), ctx.Bool("verbose"))
+	err = createPresentationFile(repository, verbose)
 	if err != nil {
 		fmt.Printf("Error creating %s file: %q\n", PRESENTATION_FILE, err)
 		return
@@ -63,7 +54,7 @@ func runInit(ctx *cli.Context) {
 	return
 }
 
-func createPresentationFile(walker git.RevWalk, repoPath string, verbose bool) (err error) {
+func createPresentationFile(r *models.Repository, verbose bool) (err error) {
 	f, err := os.Create(PRESENTATION_FILE)
 	if err != nil {
 		return
@@ -75,19 +66,10 @@ func createPresentationFile(walker git.RevWalk, repoPath string, verbose bool) (
 	}()
 
 	config := new(models.PresentationConfig)
-	config.Repo = repoPath
+	config.Repo = r.Path
 
-	iterator := func(commit *git.Commit) bool {
-		if verbose {
-			fmt.Printf("Adding Commit: %s => %s", commit.Id(), commit.Message())
-		}
-		config.Commits = append(config.Commits, models.ConfigMeta{commit.Id().String(), commit.Message()})
-		return true
-	}
-
-	err = walker.Iterate(iterator)
-	if err != nil {
-		return
+	for _, c := range r.Commits {
+		config.Commits = append(config.Commits, models.ConfigMeta{c.Id().String(), c.Message()})
 	}
 
 	configJSON, err := json.Marshal(config)
