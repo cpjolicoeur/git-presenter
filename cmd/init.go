@@ -8,8 +8,11 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/cpjolicoeur/git-presenter/models"
 	"github.com/libgit2/git2go"
 )
+
+const PRESENTATION_FILE = ".git-presentation"
 
 var CmdInit = cli.Command{
 	Name:  "init",
@@ -21,18 +24,6 @@ You can edit use this file to customize which commits will be included in the pr
 		cli.BoolFlag{"verbose, v", "show process details", ""},
 		cli.StringFlag{"repo, r", ".", "present specified repository", ""},
 	},
-}
-
-const PRESENTATION_FILE = ".git-presentation"
-
-type PresentationConfig struct {
-	Repo    string       `json:"repository"`
-	Commits []ConfigMeta `json:"commits"`
-}
-
-type ConfigMeta struct {
-	Sha     string `json:"sha"`
-	Message string `json:"message"`
 }
 
 func runInit(ctx *cli.Context) {
@@ -83,14 +74,14 @@ func createPresentationFile(walker git.RevWalk, repoPath string, verbose bool) (
 		}
 	}()
 
-	config := new(PresentationConfig)
+	config := new(models.PresentationConfig)
 	config.Repo = repoPath
 
 	iterator := func(commit *git.Commit) bool {
 		if verbose {
 			fmt.Printf("Adding Commit: %s => %s", commit.Id(), commit.Message())
 		}
-		config.Commits = append(config.Commits, ConfigMeta{commit.Id().String(), commit.Message()})
+		config.Commits = append(config.Commits, models.ConfigMeta{commit.Id().String(), commit.Message()})
 		return true
 	}
 

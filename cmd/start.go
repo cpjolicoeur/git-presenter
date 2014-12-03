@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/cpjolicoeur/git-presenter/models"
 )
 
 var CmdStart = cli.Command{
@@ -36,7 +37,7 @@ func runStart(ctx *cli.Context) {
 			log.Fatal(err)
 		}
 
-		var presentationConfig PresentationConfig
+		var presentationConfig models.PresentationConfig
 		err = json.Unmarshal(jsonConfig, &presentationConfig)
 		if err != nil { // bad JSON config for some reason,
 			fmt.Printf("Your %s appears to be invalid.  Please either run `git-presenter init` again to rebuild it, or remove the file completely and run `git-presenter start` again.\n\tError: %q\n", PRESENTATION_FILE, err)
