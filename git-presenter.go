@@ -9,13 +9,14 @@ import (
 	"github.com/cpjolicoeur/git-presenter/cmd"
 )
 
-const APP_VER = "0.1.1"
+// Application version
+const AppVersion = "0.1.1"
 
 func main() {
 	app := cli.NewApp()
 	app.Name = "git-presenter"
 	app.Usage = "Git presentation tool"
-	app.Version = APP_VER
+	app.Version = AppVersion
 	app.Commands = []cli.Command{
 		cmd.CmdInit,
 		cmd.CmdStart,
