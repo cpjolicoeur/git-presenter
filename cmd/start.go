@@ -4,9 +4,9 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/codegangsta/cli"
@@ -26,8 +26,8 @@ var CmdStart = cli.Command{
 }
 
 func runStart(ctx *cli.Context) {
-	var controller presenter.Controller
 	verbose := ctx.Bool("verbose")
+	presenter := &presenter.Presenter{Verbose: verbose}
 
 	configFile, exists := configFileExists()
 	if exists {
@@ -36,27 +36,18 @@ func runStart(ctx *cli.Context) {
 			fmt.Printf("Found %s file\n", PRESENTATION_FILE)
 		}
 
-		jsonConfig, err := ioutil.ReadAll(configFile)
+		presentationConfig, err := loadConfigFile(configFile)
 		if err != nil {
-			log.Fatal(err)
-		}
-
-		var presentationConfig models.PresentationConfig
-		err = json.Unmarshal(jsonConfig, &presentationConfig)
-		if err != nil { // bad JSON config for some reason,
-			fmt.Printf("Your %s appears to be invalid.  Please either run `git-presenter init` again to rebuild it, or remove the file completely and run `git-presenter start` again.\n\tError: %q\n", PRESENTATION_FILE, err)
+			fmt.Println(err)
 			return
 		}
 
-		if verbose {
-			fmt.Println("Presenting repository from:", presentationConfig.Repo)
-		}
-		controller.Load(presentationConfig, verbose)
+		presenter.Load(presentationConfig)
 	} else {
-		controller.Initialize(ctx.String("repo"), verbose)
+		presenter.Initialize(ctx.String("repo"))
 	}
 
-	controller.Start(verbose)
+	presenter.Start()
 	return
 }
 
@@ -67,4 +58,20 @@ func configFileExists() (*os.File, bool) {
 	}
 
 	return file, true
+}
+
+func loadConfigFile(configFile *os.File) (config *models.PresentationConfig, err error) {
+	jsonConfig, err := ioutil.ReadAll(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var presentationConfig models.PresentationConfig
+	err = json.Unmarshal(jsonConfig, &presentationConfig)
+	if err != nil { // bad JSON config for some reason,
+		err = errors.New(fmt.Sprintf("Your %s appears to be invalid.  Please either run `git-presenter init` again to rebuild it, or remove the file completely and run `git-presenter start` again.\n\tError: %q\n", PRESENTATION_FILE, err))
+		return nil, err
+	}
+
+	return &presentationConfig, err
 }
