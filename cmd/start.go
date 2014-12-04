@@ -27,7 +27,7 @@ var CmdStart = cli.Command{
 
 func runStart(ctx *cli.Context) {
 	verbose := ctx.Bool("verbose")
-	presenter := &presenter.Presenter{Verbose: verbose}
+	presenter := &presenter.Presenter{Verbose: verbose, Controller: new(presenter.Controller)}
 
 	configFile, exists := configFileExists()
 	if exists {
@@ -47,7 +47,10 @@ func runStart(ctx *cli.Context) {
 		presenter.Initialize(ctx.String("repo"))
 	}
 
-	presenter.Start()
+	err := presenter.Start()
+	if err != nil {
+		fmt.Println("Problem running presentation:", err)
+	}
 	return
 }
 

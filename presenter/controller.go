@@ -5,63 +5,47 @@ package presenter
 import (
 	"fmt"
 
-	"github.com/cpjolicoeur/git-presenter/models"
+	"github.com/libgit2/git2go"
 )
 
-type Presenter struct {
-	Verbose    bool
-	Repository *models.Repository
+type Controller struct {
+	Commits []*git.Commit
+
+	currentCommit *git.Commit
+	currentIndex  int
+	lastCommand   string
 }
 
-/*
- * Setup the presentation based on configuration file
- */
-func (p *Presenter) Load(config *models.PresentationConfig) {
-	if p.Verbose {
-		fmt.Println("Presenting repository from:", config.Repo)
-	}
-	p.Repository = &models.Repository{Path: config.Repo}
-	err := p.Repository.Open()
+func (c *Controller) StartPresentation() (err error) {
+	c.currentIndex = 0
+	err = c.loadCommit(c.currentIndex)
 	if err != nil {
-		fmt.Println("Problem opening repository at:", config.Repo)
 		return
 	}
-	defer p.Repository.Cleanup()
 
-	// Load the Commits manually based on the config
-	err = p.Repository.ProcessFromConfig(config.Commits, p.Verbose)
-	if err != nil {
-		fmt.Printf("Problem loading commits:\n\t%q", err)
-		return
-	}
+	// c.WaitForCommand()
+	return
 }
 
-/*
- * Setup the presentation based on direct repository parsing
- */
-func (p *Presenter) Initialize(repositoryPath string) {
-	if p.Verbose {
-		fmt.Println("Initializing Presentation from repository:", repositoryPath)
-	}
-
-	p.Repository = &models.Repository{Path: repositoryPath}
-	err := p.Repository.Open()
-	if err != nil {
-		fmt.Println("Problem opening repository at:", repositoryPath)
-		return
-	}
-	defer p.Repository.Cleanup()
-
-	err = p.Repository.Process(p.Verbose)
-	if err != nil {
-		fmt.Println("Problem parsing repository:", err)
-		return
-	}
+func (c *Controller) NextSlide() (err error) {
+	return
 }
 
-/*
- * Run the main presentation loop
- */
-func (p *Presenter) Start() {
-	fmt.Println("Starting presentation...")
+func (c *Controller) PreviousSlide() (err error) {
+	return
+}
+
+func (c *Controller) loadCommit(index int) (err error) {
+	c.currentCommit = c.Commits[index]
+	// tree, err := c.currentCommit.Tree()
+	// tree, err := c.Commits[index].Tree()
+	// if err != nil {
+	// 	fmt.Println("commit tree error:", err)
+	// }
+	// tree.Free()
+	// fmt.Println("commit tree", tree)
+	// fmt.Println("commit tree", tree.Owner().Path)
+
+	fmt.Println("commit to load", c.Commits[index].Message())
+	return
 }
